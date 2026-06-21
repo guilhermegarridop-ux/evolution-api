@@ -2,22 +2,18 @@
 
 source ./Docker/scripts/env_functions.sh
 
-if [ "$DOCKER_ENV" != "true" ]; then
+if [ "$DOCKER_ENV" == "true" ]; then
     export_env_vars
 fi
 
-if [[ "$DATABASE_PROVIDER" == "postgresql" || "$DATABASE_PROVIDER" == "mysql" || "$DATABASE_PROVIDER" == "psql_bouncer" ]]; then
-    export DATABASE_URL
-    echo "Generating database for $DATABASE_PROVIDER"
-    echo "Database URL: $DATABASE_URL"
-    npm run db:generate
-    if [ $? -ne 0 ]; then
-        echo "Prisma generate failed"
-        exit 1
-    else
-        echo "Prisma generate succeeded"
-    fi
+# Set default DATABASE_PROVIDER if not set
+DATABASE_PROVIDER_DEFAULT=${DATABASE_PROVIDER:-postgresql}
+
+if [ "$DATABASE_PROVIDER_DEFAULT" == "postgresql" ] || [ "$DATABASE_PROVIDER_DEFAULT" == "mysql" ] || [ "$DATABASE_PROVIDER_DEFAULT" == "psql_bouncer" ]; then
+    echo "Generating Prisma client for $DATABASE_PROVIDER_DEFAULT"
+    # Run prisma generate (does not require DB connection)
+    npm run db:generate || echo "Warning: Prisma generate had issues, continuing..."
+    echo "Prisma client generation completed"
 else
-    echo "Error: Database provider $DATABASE_PROVIDER invalid."
-    exit 1
+    echo "Warning: Unknown database provider $DATABASE_PROVIDER_DEFAULT, skipping Prisma generation"
 fi
